@@ -16,35 +16,24 @@ class FlashlightService : Service() {
     private lateinit var notificationManager: NotificationManagerCompat
 
     companion object {
-        const val CHANNEL_ID = "flashlight_channel"
+        const val CHANNEL_ID = "flashlight_live"
         const val NOTIFICATION_ID = 1001
         const val ACTION_START = "com.flashlight.START"
-        const val ACTION_STOP = "com.flashlight.STOP"
+        const val ACTION_STOP  = "com.flashlight.STOP"
         const val ACTION_UPDATE = "com.flashlight.UPDATE"
 
         fun start(context: Context) {
-            val intent = Intent(context, FlashlightService::class.java).apply {
-                action = ACTION_START
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
-            }
+            val i = Intent(context, FlashlightService::class.java).apply { action = ACTION_START }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(i)
+            else context.startService(i)
         }
 
         fun stop(context: Context) {
-            val intent = Intent(context, FlashlightService::class.java).apply {
-                action = ACTION_STOP
-            }
-            context.startService(intent)
+            context.startService(Intent(context, FlashlightService::class.java).apply { action = ACTION_STOP })
         }
 
         fun update(context: Context) {
-            val intent = Intent(context, FlashlightService::class.java).apply {
-                action = ACTION_UPDATE
-            }
-            context.startService(intent)
+            context.startService(Intent(context, FlashlightService::class.java).apply { action = ACTION_UPDATE })
         }
     }
 
@@ -52,126 +41,138 @@ class FlashlightService : Service() {
         super.onCreate()
         flashlight = FlashlightManager.getInstance(this)
         notificationManager = NotificationManagerCompat.from(this)
-        createNotificationChannel()
+        createChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
                 startForeground(NOTIFICATION_ID, buildNotification())
-                updateNotification()
             }
             ACTION_STOP -> {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
+                return START_NOT_STICKY
             }
-            ACTION_UPDATE -> {
-                updateNotification()
-            }
+            ACTION_UPDATE -> updateNotification()
         }
         return START_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun createNotificationChannel() {
+    // ─────────────────────────────────────────
+    // Channel
+    // ─────────────────────────────────────────
+    private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
+            val ch = NotificationChannel(
                 CHANNEL_ID,
-                "Flashlight Controls",
+                "Flashlight Live",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Live flashlight intensity controls"
                 setShowBadge(false)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
+            (getSystemService(NotificationManager::class.java)).createNotificationChannel(ch)
         }
     }
 
+    // ─────────────────────────────────────────
+    // Build live notification with RemoteViews
+    // ─────────────────────────────────────────
     fun buildNotification(): Notification {
-        val isOn = flashlight.isOn
+        val isOn      = flashlight.isOn
         val intensity = flashlight.currentIntensity
-        val supportsIntensity = flashlight.supportsIntensity()
 
-        // Intent to open app
-        val openAppIntent = PendingIntent.getActivity(
-            this, 0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        // ── Intents ──
+        val openApp = pendingActivity(0, Intent(this, MainActivity::class.java))
+        val toggle  = pendingBroadcast(1, "com.flashlight.ACTION_TOGGLE")
+        val dimmer  = pendingBroadcast(2, "com.flashlight.ACTION_INTENSITY_DOWN")
+        val brighter = pendingBroadcast(3, "com.flashlight.ACTION_INTENSITY_UP")
 
-        // Toggle action
-        val toggleIntent = PendingIntent.getBroadcast(
-            this, 1,
-            Intent(this, NotificationReceiver::class.java).apply {
-                action = "com.flashlight.ACTION_TOGGLE"
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        // ── Compact RemoteViews ──
+        val compact = RemoteViews(packageName, R.layout.notification_compact).apply {
+            setImageViewResource(R.id.notif_icon,
+                if (isOn) R.drawable.ic_flashlight_on else R.drawable.ic_flashlight_off)
+            setTextViewText(R.id.notif_title, "🔦 Flashlight")
+            setTextViewText(R.id.notif_status,
+                if (isOn) "ON  •  Level $intensity/10" else "OFF")
+            setTextColor(R.id.notif_status,
+                if (isOn) Color.parseColor("#FBBF24") else Color.parseColor("#888888"))
+            setTextViewText(R.id.notif_toggle_btn, if (isOn) "Turn OFF" else "Turn ON")
+            setOnClickPendingIntent(R.id.notif_toggle_btn, toggle)
+            setOnClickPendingIntent(R.id.notif_icon, openApp)
+        }
 
-        // Intensity decrease
-        val decreaseIntent = PendingIntent.getBroadcast(
-            this, 2,
-            Intent(this, NotificationReceiver::class.java).apply {
-                action = "com.flashlight.ACTION_INTENSITY_DOWN"
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        // ── Expanded RemoteViews ──
+        val expanded = RemoteViews(packageName, R.layout.notification_expanded).apply {
+            setImageViewResource(R.id.notif_exp_icon,
+                if (isOn) R.drawable.ic_flashlight_on else R.drawable.ic_flashlight_off)
+            setTextViewText(R.id.notif_exp_badge, if (isOn) "ON" else "OFF")
+            setTextColor(R.id.notif_exp_badge,
+                if (isOn) Color.parseColor("#FBBF24") else Color.parseColor("#888888"))
+            setInt(R.id.notif_exp_badge, "setBackgroundColor",
+                if (isOn) Color.parseColor("#2A2200") else Color.parseColor("#2A2A2A"))
 
-        // Intensity increase
-        val increaseIntent = PendingIntent.getBroadcast(
-            this, 3,
-            Intent(this, NotificationReceiver::class.java).apply {
-                action = "com.flashlight.ACTION_INTENSITY_UP"
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+            // Live progress bar
+            setProgressBar(R.id.notif_intensity_bar, 10, intensity, false)
 
-        val toggleLabel = if (isOn) "Turn OFF" else "Turn ON"
-        val statusText = if (isOn) "ON • Level $intensity/10" else "OFF"
-        val intensityBar = buildIntensityBar(intensity, isOn)
+            setTextViewText(R.id.notif_exp_intensity_label,
+                if (isOn) "Intensity  $intensity / 10" else "Turn on to adjust intensity")
 
-        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            // Buttons
+            setTextViewText(R.id.notif_btn_toggle, if (isOn) "⏻  Turn OFF" else "⏻  Turn ON")
+            setTextColor(R.id.notif_btn_toggle,
+                if (isOn) Color.parseColor("#FF6B6B") else Color.parseColor("#FBBF24"))
+
+            setOnClickPendingIntent(R.id.notif_btn_toggle, toggle)
+            setOnClickPendingIntent(R.id.notif_btn_down,   dimmer)
+            setOnClickPendingIntent(R.id.notif_btn_up,     brighter)
+
+            // Dim dimmer/brighter buttons when off
+            setFloat(R.id.notif_btn_down, "setAlpha", if (isOn && intensity > 1)  1f else 0.35f)
+            setFloat(R.id.notif_btn_up,   "setAlpha", if (isOn && intensity < 10) 1f else 0.35f)
+        }
+
+        // ── Build notification ──
+        return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(if (isOn) R.drawable.ic_flashlight_on else R.drawable.ic_flashlight_off)
-            .setContentTitle("🔦 Flashlight $statusText")
-            .setContentText(intensityBar)
-            .setContentIntent(openAppIntent)
+            .setContentTitle("Flashlight")
+            .setContentText(if (isOn) "ON • Level $intensity/10" else "OFF")
+            .setCustomContentView(compact)
+            .setCustomBigContentView(expanded)
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setContentIntent(openApp)
             .setOngoing(true)
             .setSilent(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setColor(if (isOn) Color.parseColor("#FFD700") else Color.GRAY)
-            .addAction(
-                R.drawable.ic_flashlight_on,
-                toggleLabel,
-                toggleIntent
-            )
-
-        if (supportsIntensity && isOn) {
-            builder.addAction(R.drawable.ic_minus, "Dimmer (${intensity - 1})", decreaseIntent)
-            builder.addAction(R.drawable.ic_plus, "Brighter (${intensity + 1})", increaseIntent)
-        }
-
-        return builder.build()
-    }
-
-    private fun buildIntensityBar(level: Int, isOn: Boolean): String {
-        if (!isOn) return "Tap to activate"
-        val filled = "█".repeat(level)
-        val empty = "░".repeat(10 - level)
-        return "Intensity: $filled$empty $level/10"
+            .setColor(if (isOn) Color.parseColor("#FBBF24") else Color.GRAY)
+            .build()
     }
 
     fun updateNotification() {
         try {
             notificationManager.notify(NOTIFICATION_ID, buildNotification())
         } catch (e: SecurityException) {
-            // Notification permission not granted
+            // No notification permission
+        } catch (e: Exception) {
+            // ignore
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
+    // ─────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────
+    private fun pendingActivity(reqCode: Int, intent: Intent): PendingIntent =
+        PendingIntent.getActivity(this, reqCode, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    private fun pendingBroadcast(reqCode: Int, action: String): PendingIntent =
+        PendingIntent.getBroadcast(
+            this, reqCode,
+            Intent(this, NotificationReceiver::class.java).apply { this.action = action },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 }
