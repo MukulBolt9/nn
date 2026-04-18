@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- power_button_bg.xml -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="oval">
+            <solid android:color="#FFD700" />
+            <stroke android:width="3dp" android:color="#FFF" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#1E1E1E" />
+            <stroke android:width="2dp" android:color="#333" />
+        </shape>
+    </item>
+</selector>
