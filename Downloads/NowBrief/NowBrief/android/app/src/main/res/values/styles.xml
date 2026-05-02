@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="colorPrimary">#60efff</item>
+        <item name="colorPrimaryDark">#0a0a0f</item>
+        <item name="colorAccent">#f093fb</item>
+    </style>
+
+    <!-- NowBrief dedicated activity theme - translucent/overlay style -->
+    <style name="NowBriefTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="colorPrimary">#60efff</item>
+        <item name="android:windowAnimationStyle">@style/NowBriefActivityAnimation</item>
+    </style>
+
+    <style name="NowBriefActivityAnimation" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/slide_up</item>
+        <item name="android:activityOpenExitAnimation">@anim/fade_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/fade_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/slide_down</item>
+    </style>
+</resources>

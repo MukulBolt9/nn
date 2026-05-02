@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0a0a0f"
+    android:gravity="center">
+
+    <!-- This activity is opened from Samsung Live Notification / Now Bar tap -->
+    <!-- The React Native app handles the actual UI rendering -->
+    <!-- This is a placeholder layout that React Native replaces -->
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="✨"
+        android:textSize="48sp"
+        android:gravity="center" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="NowBrief"
+        android:textColor="#ffffff"
+        android:textSize="28sp"
+        android:fontFamily="sans-serif-light"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Loading your brief..."
+        android:textColor="#888888"
+        android:textSize="14sp"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>

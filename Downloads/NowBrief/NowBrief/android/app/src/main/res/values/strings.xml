@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NowBrief</string>
+    <string name="nowbrief_channel_name">NowBrief Live Updates</string>
+    <string name="nowbrief_channel_desc">Real-time briefings and smart notifications</string>
+    <string name="nowbrief_action_next">Next</string>
+    <string name="nowbrief_action_dismiss">Dismiss</string>
+    <string name="notification_title">NowBrief</string>
+</resources>
