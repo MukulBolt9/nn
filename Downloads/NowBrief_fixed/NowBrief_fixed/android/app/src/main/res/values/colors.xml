@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Flashlight exact color palette applied to NowBrief -->
+<resources>
+    <color name="amber_400">#FBBF24</color>
+    <color name="amber_500">#F59E0B</color>
+    <color name="amber_600">#D97706</color>
+    <color name="amber_dim">#2A1800</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_dim">#888888</color>
+    <color name="bg_dark">#0A0A0A</color>
+    <color name="card_bg">#141414</color>
+    <color name="surface_up">#1E1E1E</color>
+    <color name="seekbar_bg">#333333</color>
+    <color name="border_color">#222222</color>
+</resources>
