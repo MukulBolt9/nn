@@ -1,0 +1,10 @@
+﻿.gradle/
+.idea/
+build/
+node_modules/
+*.apk
+*.aab
+*.apks
+*.jks
+local.properties
+Downloads/
